@@ -1,5 +1,5 @@
 /*
-	vanbog_memory_manager -- v0.7.2 -- https://github.com/VanBog335
+	vanbog_memory_manager -- v0.7.4 -- https://github.com/VanBog335
 	to use, do this:
 	```c
 	#define VB_MM_IMPLEMENTATION
@@ -51,11 +51,7 @@
 #define VB_SIZE_MULTIPLIER 2
 #define VB_INITIAL_ARRAY_SIZE 8
 
-void **vb_PointArray;
-size_t vb_array_size = VB_INITIAL_ARRAY_SIZE;
-size_t vb_current_size = 0;
-
-void *vb_malloc(size_t size);
+void *vb_alloc(size_t size);
 void *vb_realloc(void *p, size_t newsize);
 void vb_free(void *p);
 void vb_freeall();
@@ -67,6 +63,10 @@ void vb_printPoints();
 
 
 #ifdef VB_MM_IMPLEMENTATION
+
+void **vb_PointArray;
+size_t vb_array_size = VB_INITIAL_ARRAY_SIZE;
+size_t vb_current_size = 0;
 
 void *vb_alloc(size_t size)
 {
@@ -143,4 +143,3 @@ void vb_printPoints()
 }
 
 #endif /* VB_MM_IMPLEMENTATION */
-
