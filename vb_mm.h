@@ -1,5 +1,5 @@
 /*
-	vanbog_memory_manager -- v0.7.1 -- https://github.com/VanBog335
+	vanbog_memory_manager -- v0.7.2 -- https://github.com/VanBog335
 	to use, do this:
 	```c
 	#define VB_MM_IMPLEMENTATION
@@ -137,9 +137,10 @@ void vb_printPoints()
 {
 	printf("----------------\n");
 	for (size_t i = 0; i < vb_array_size; i++){
-		printf("%llX. %p\n", i, vb_PointArray[i]);
+		printf("%zX. %p\n", i, vb_PointArray[i]);
 	}
 	printf("----------------\n");
 }
 
 #endif /* VB_MM_IMPLEMENTATION */
+
