@@ -1,5 +1,5 @@
 /*
-	vanbog_memory_manager -- v0.7.4 -- https://github.com/VanBog335
+	vanbog_memory_manager -- v0.8.0 -- https://github.com/VanBog335
 	to use, do this:
 	```c
 	#define VB_MM_IMPLEMENTATION
@@ -14,8 +14,6 @@
 
 	int main()
 	{
-		vb_da_ptr_init();
-
 		char *a = vb_alloc(16);
 		a = vb_realloc(a, 8);
 		vb_free(a);
@@ -47,15 +45,10 @@
 #define VB_MEMFREE free
 #endif /* VB_MEMFREE */
 
-
-#define VB_SIZE_MULTIPLIER 2
-#define VB_INITIAL_ARRAY_SIZE 8
-
 void *vb_alloc(size_t size);
 void *vb_realloc(void *p, size_t newsize);
 void vb_free(void *p);
 void vb_freeall();
-void vb_da_ptr_init();
 void vb_da_ptr_destroy();
 void vb_printPoints();
 
@@ -64,21 +57,28 @@ void vb_printPoints();
 
 #ifdef VB_MM_IMPLEMENTATION
 
-void **vb_PointArray;
-size_t vb_array_size = VB_INITIAL_ARRAY_SIZE;
-size_t vb_current_size = 0;
+#define vbmm_da_append(xs, x)\
+	do {\
+		if ((xs)->count >= (xs)->cap) {\
+			(xs)->cap = (xs)->cap == 0 ? 4 : (xs)->cap*2;\
+			(xs)->items = realloc((xs)->items, (xs)->cap*sizeof(*(xs)->items));\
+		}\
+		(xs)->items[(xs)->count++] = (x);\
+	} while (0)
+
+typedef struct {
+    void **items;
+    size_t count;
+    size_t cap;
+} vb_da_ptrptr_t;
+
+vb_da_ptrptr_t vb_PtrArray = (vb_da_ptrptr_t){0};
 
 void *vb_alloc(size_t size)
 {
 	void *p = VB_MEMALLOC(size);
-	if (vb_current_size >= vb_array_size) {
-		vb_array_size *= VB_SIZE_MULTIPLIER;
-		vb_PointArray = VB_MEMREALLOC(vb_PointArray, vb_array_size * sizeof(void *));
-		for (size_t i = (vb_array_size/VB_SIZE_MULTIPLIER); i < vb_array_size; i++) {
-			vb_PointArray[i] = NULL;
-		}
-	}
-	vb_PointArray[vb_current_size++] = p;
+	if (!p) return 0;
+	vbmm_da_append(&vb_PtrArray, p);
 	return p;
 }
 
@@ -87,9 +87,9 @@ void *vb_realloc(void *p, size_t newsize)
 	void *oldp = p;
 	void *newp = VB_MEMREALLOC(p, newsize);
 
-	for (size_t i = 0; i < vb_array_size; i++){
-		if (vb_PointArray[i] == oldp){
-			vb_PointArray[i] = newp;
+	for (size_t i = 0; i < vb_PtrArray.count; i++){
+		if (vb_PtrArray.items[i] == oldp){
+			vb_PtrArray.items[i] = newp;
 			break;
 		}
 	}
@@ -99,11 +99,11 @@ void *vb_realloc(void *p, size_t newsize)
 
 void vb_free(void *p)
 {
-	for (size_t i = 0; i < vb_current_size; i++) {
-		if (vb_PointArray[i] == p) {
-			vb_current_size--;
-			vb_PointArray[i] = vb_PointArray[vb_current_size]; // Replace with last element
-			vb_PointArray[vb_current_size] = NULL;
+	for (size_t i = 0; i < vb_PtrArray.count; i++) {
+		if (vb_PtrArray.items[i] == p) {
+			vb_PtrArray.count--;
+			vb_PtrArray.items[i] = vb_PtrArray.items[vb_PtrArray.count]; // Replace with last element
+			vb_PtrArray.items[vb_PtrArray.count] = NULL;
 			break;
 		}
 	}
@@ -112,34 +112,28 @@ void vb_free(void *p)
 
 void vb_freeall()
 {
-	for (size_t i = 0; i < vb_array_size; i++){
-		if (vb_PointArray[i] != 0){
-			VB_MEMFREE(vb_PointArray[i]);
-			vb_PointArray[i] = NULL;
-			vb_current_size--;
+	for (size_t i = 0; i < vb_PtrArray.count; i++){
+		if (vb_PtrArray.items[i] != 0){
+			VB_MEMFREE(vb_PtrArray.items[i]);
+			vb_PtrArray.items[i] = NULL;
 		}
 	}
-}
-
-void vb_da_ptr_init() {
-	vb_PointArray = VB_MEMALLOC(vb_array_size * sizeof(void *));
-	for (size_t i = 0; i < vb_array_size; i++) {
-		vb_PointArray[i] = NULL;
-	}
+	vb_PtrArray.count = 0;
 }
 
 void vb_da_ptr_destroy() {
 	vb_freeall();
-	VB_MEMFREE(vb_PointArray);
+	VB_MEMFREE(vb_PtrArray.items);
+	vb_PtrArray = (vb_da_ptrptr_t){0};
 }
 
 void vb_printPoints()
 {
-	printf("----------------\n");
-	for (size_t i = 0; i < vb_array_size; i++){
-		printf("%zX. %p\n", i, vb_PointArray[i]);
+	printf("-------DEBUG-------\n");
+	for (size_t i = 0; i < vb_PtrArray.cap; i++){
+		printf("%zX. %p\n", i, vb_PtrArray.items[i]);
 	}
-	printf("----------------\n");
+	printf("-------DEBUG--------\n");
 }
 
 #endif /* VB_MM_IMPLEMENTATION */
